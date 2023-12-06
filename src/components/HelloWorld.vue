@@ -1,6 +1,7 @@
 
 
 <template>
+  <div>
   <head>
     <link href="https://fonts.googleapis.com/css2?family=Exo+2:wght@400;500&display=swap" rel="stylesheet">
     <meta charset="UTF-8">
@@ -13,7 +14,7 @@
         <h1>PARCIALITO</h1>
       </div>
       <div class="buttons">
-        <a href="#" class="button cadastrar">CADASTRAR</a>
+        <a href="#" class="button">CADASTRAR</a>
         <a href="#" class="button">ENTRAR</a>
       </div>
     </header>
@@ -30,10 +31,13 @@
 
   <label for="email">E-mail:</label>
   <input v-model="email" type="email" id="email" name="email" required>
+  <div>Hello Jude</div>
+  <div xv-if="MsgError" class="error-message">msgrrorororor</div>
+
 
   <label for="password">Senha:</label>
   <input v-model="password" type="password" id="password" name="password" required>
-  <div v-if="errorMessage" class="error-message">{{ errorMessage }}</div>
+  <div v-if="successMessage" class="successMessage">{{ successMessage }}</div>
 
   <button type="submit">Cadastrar</button>
 </form>
@@ -107,63 +111,91 @@
       <p>&copy; 2023 Parcialito. Todos los derechos reservados.</p>
     </footer>
   </body>
+  </div>
 </template>
 
 /* eslint-disable */
 <script>
+import script from './script.js';
+import modal from './modal.js';
+import { registerUser } from './registration.js';
 
-  // Move the content of your external scripts here
-  // eslint-disable-next-line
-  import script from './script.js';
-  // eslint-disable-next-line
-  import modal from './modal.js';
+export default {
+  data() {
+    return {
+      username: '',
+      email: '',
+      password: '',
+      MsgError: '',
+      errorMessage: '',
+      successMessage: '',
+      emailErrorMessage: '',
+    };
+  },
 
-  import { registerUser } from './registration.js';
+  mounted() {
+    script();
+    modal();
+  },
 
-
-
-  export default {
-    mounted() {
-      // Call the functions or code from your external scripts here
-      script();
-      modal();
-      
-      // Example of using the registerUser method
-      this.registerUser();
-    },
-
-    methods: {
-      closeModal() {
-        // Implement your close modal logic here
-        this.errorMessage = ''; // Clear error message when closing the modal
-      },
-      
-      registerUser() {
-        // Implement your registerUser logic here
-        // For example:
-        const user = {  
-          username: this.username,
-          email: this.email,
-          password: this.password,
-        };
-        
-      // Clear previous error message
+  methods: {
+    closeModal() {
       this.errorMessage = '';
-        registerUser(user.username, user.email, user.password)
-          .then(data => {
-            console.log('User registered:', data);
-            // Handle the response as needed
-            // Implement any additional logic here
-          })
-          .catch(error => {
-            console.error('Registration failed:', error);
-            this.errorMessage = "Registration failed. Please check your information and try again.";
-            // Handle the error as needed
-          });
-      },
+      this.successMessage = '';
     },
-  };
+
+    async registerUser() {
+    try {
+      const user = {
+        username: this.username,
+        email: this.email,
+        password: this.password,
+      };
+
+      this.errorMessage = '';
+      this.successMessage = '';
+      this.emailErrorMessage = ''; // Reset email error message
+
+      const response = await registerUser(user.username, user.email, user.password);
+
+      if (response.status === 200) {
+        console.log('User registered:', response.data);
+        this.successMessage = 'Registration successful!';
+      } else {
+        // Handle unexpected server response
+        this.errorMessage = 'Unexpected server response. Please try again later.';
+      }
+    } catch (error) {
+      console.error('Registration failed:', error);
+
+      if (error instanceof Response) {
+        // Handle different server responses
+        if (error.status === 400) {
+          const errorData = await error.json();
+          if (errorData.message === 'Email already exists') {
+            this.emailErrorMessage = 'Email already exists. Please use a different email.';
+            console.log('Antes do erro')
+            this.MsgError = 'Email já cadastrado'
+            console.log('Depois do erro')
+          } else {
+            this.errorMessage = errorData.message || 'Registration failed. Please check your information and try again.';
+          }
+        } else {
+          this.errorMessage = 'Server error. Please try again later.';
+        }
+      } else {
+        this.errorMessage = 'Unexpected error. Please try again later.';
+      }
+    }
+  },
+},
+};
 </script>
+
+
+
+
+
 
 <style>
 /* Your component-specific styles go here */
